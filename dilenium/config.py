@@ -1,3 +1,0 @@
-def configure(*args, **kwgs):
-    """
-    """
