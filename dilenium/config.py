@@ -1,0 +1,3 @@
+def configure(*args, **kwgs):
+    """
+    """

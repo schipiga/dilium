@@ -1,0 +1,3 @@
+class DileniumError(Exception):
+    """
+    """
