@@ -1,5 +1,6 @@
 import os
 import tempfile
+import signal
 
 from ansible.plugins import module_loader
 from ansible.inventory import Inventory
@@ -15,6 +16,8 @@ MODULES_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), 'modules'))
 
 module_loader.add_directory(MODULES_PATH)
+
+SSH_OPTS = '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
 
 
 class Executor(object):
@@ -47,9 +50,10 @@ class Executor(object):
         self._exec(task)
         return dst
 
-    def xvfb(self, width=800, height=600, depth=24, options=None):
+    def xvfb(self, display, width=800, height=600, depth=24, options=None):
         task = {
             'xvfb': {
+                'display': display,
                 'width': width,
                 'height': height,
                 'depth': depth,
@@ -58,8 +62,23 @@ class Executor(object):
         }
         return self._exec(task)
 
-    def kill(self, pid):
-        return self._exec({'shell': 'kill -9 ' + pid})
+    def avconv(self, file_path, display, frame_rate=30,
+               width=800, height=600, codec='libx264', options=None):
+        task = {
+            'avconv': {
+                'rate': frame_rate,
+                'width': width,
+                'height': height,
+                'display': display,
+                'codec': codec,
+                'options': options,
+                'file': file_path
+            }
+        }
+        return self._exec(task)
+
+    def kill(self, pid, sig=signal.SIGKILL):
+        return self._exec({'shell': 'kill -{} {}'.format(sig, pid)})
 
     def _exec(self, task):
         play_source = {'hosts': self._hosts,
@@ -69,6 +88,7 @@ class Executor(object):
         self.options = Options()
         self.options.connection = 'ssh'
         self.options.remote_user = 'vagrant'
+        self.options.ssh_common_args = SSH_OPTS
 
         loader = DataLoader()
         variable_manager = VariableManager()

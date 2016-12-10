@@ -22,23 +22,29 @@ def main():
     """
     module = AnsibleModule(
         argument_spec={
-            'display': {'required': True, 'type': 'int'},
+            'rate': {'required': True, 'type': 'int'},
             'width': {'required': True, 'type': 'int'},
             'height': {'required': True, 'type': 'int'},
-            'depth': {'required': True, 'type': 'int'},
+            'display': {'required': True, 'type': 'int'},
+            'codec': {'required': True, 'type': 'str'},
             'options': {'required': True, 'type': 'list'},
+            'file': {'required': True, 'type': 'str'},
         })
 
-    display = module.params['display']
+    rate = module.params['rate']
     width = module.params['width']
     height = module.params['height']
-    depth = module.params['depth']
+    display = module.params['display']
+    codec = module.params['codec']
     options = module.params['options']
+    file = module.params['file']
     pid_path = tempfile.mktemp()
 
-    cmd = 'Xvfb :{} -screen 0 {}x{}x{}'.format(display, width, height, depth)
+    cmd = 'nohup avconv -f x11grab -r {} -s {}x{} -i :{} -codec {}'.format(
+        rate, width, height, display, codec)
     if options:
         cmd += ' ' + ' '.join(options)
+    cmd += ' ' + file + ' >/dev/null 2>&1'
     cmd += ' & echo $! > ' + pid_path
     cmd = 'bash -c "{}"'.format(cmd)
 

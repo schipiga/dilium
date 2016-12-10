@@ -1,4 +1,7 @@
+import random
+import signal
 from contextlib import contextmanager
+import tempfile
 
 from pylru import lrudecorator
 
@@ -9,9 +12,12 @@ from dilium._selenium import Chrome
 class Node(object):
     """
     """
+    MAX_DISPLAY = 2147483647
 
     def __init__(self, client):
         self._client = client
+        self._display = random.randint(1, self.MAX_DISPLAY)
+        self._video_path = None
 
     def get_browser(self):
         """
@@ -24,12 +30,13 @@ class Node(object):
     def start_video(self):
         """
         """
-        self._video_pid = self.remote_exec('avconv', async=True)
+        self._video_path = tempfile.mktemp()
+        self._video_pid = self.remote_exec.avconv(self._video_path)
 
     def stop_video(self):
         """
         """
-        self.remote_exec.kill(self._video_pid)
+        self.remote_exec.kill(self._video_pid, signal.SIGINT)
 
     @contextmanager
     def capture_video(self):
@@ -49,7 +56,8 @@ class Node(object):
     def start_xvfb(self):
         """
         """
-        self._xvfb_pid = self.remote_exec.xvfb()
+        self._xvfb_pid = self.remote_exec.xvfb(
+            self._display, options=["-noreset", "-ac"])
 
     def stop_xvfb(self):
         """
