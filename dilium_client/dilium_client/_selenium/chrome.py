@@ -6,12 +6,8 @@ class Chrome(webdriver.Chrome):
 
     def __init__(self,
                  node,
-                 executable_path="chromedriver",
-                 port=0,
                  chrome_options=None,
-                 service_args=None,
-                 desired_capabilities=None,
-                 service_log_path=None):
+                 desired_capabilities=None):
         self._node = node
 
         if chrome_options is None:
@@ -24,18 +20,12 @@ class Chrome(webdriver.Chrome):
             else:
                 desired_capabilities.update(chrome_options.to_capabilities())
 
-        self._node.remote_exec.start_driver(
-            executable_path,
-            port=port,
-            service_args=service_args,
-            log_path=service_log_path)
-
-        remote_url = 'http://{}:{}'.format(self._node.host, port)
+        self._node.start_webdriver()
 
         try:
             super(webdriver.Chrome, self).__init__(
                 command_executor=ChromeRemoteConnection(
-                    remote_server_addr=remote_url),
+                    remote_server_addr=self._node.webdriver_url),
                 desired_capabilities=desired_capabilities)
         except Exception:
             self.quit()
@@ -44,5 +34,7 @@ class Chrome(webdriver.Chrome):
     def quit(self):
         """
         """
-        super(webdriver.Chrome, self).quit()
-        self._node.remote_exec.stop_driver(self._node.host, self._driver_path)
+        try:
+            super(webdriver.Chrome, self).quit()
+        finally:
+            self._node.stop_driver()
