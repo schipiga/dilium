@@ -24,13 +24,14 @@ class Node(object):
     def start_video(self):
         """
         """
-        self._video_pid = self.remote_exec('avconv')
+        self._video_pid = self.remote_exec('avconv', async=True)
 
     def stop_video(self):
         """
         """
         self.remote_exec.kill(self._video_pid)
 
+    @contextmanager
     def capture_video(self):
         """
         """
@@ -48,7 +49,7 @@ class Node(object):
     def start_xvfb(self):
         """
         """
-        self._xvfb_pid = self.remote_exec('Xvfb')
+        self._xvfb_pid = self.remote_exec.xvfb()
 
     def stop_xvfb(self):
         """
@@ -68,7 +69,7 @@ class Node(object):
     def start_webdriver(self):
         """
         """
-        self._driver_pid = self.remote_exec('chromedriver')
+        self._driver_pid = self.remote_exec('chromedriver', async=True)
 
     def stop_webdriver(self):
         """

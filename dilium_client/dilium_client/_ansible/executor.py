@@ -1,5 +1,7 @@
+import os
 import tempfile
 
+from ansible.plugins import module_loader
 from ansible.inventory import Inventory
 from ansible.vars import VariableManager
 from ansible.parsing.dataloader import DataLoader
@@ -9,11 +11,16 @@ from ansible.executor import task_queue_manager
 from .callback import Callback
 from .options import Options
 
+MODULES_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), 'modules'))
+
+module_loader.add_directory(MODULES_PATH)
+
 
 class Executor(object):
 
     def __init__(self, *hosts):
-        self._hosts = hosts
+        self._hosts = list(hosts)
 
     def __call__(self, cmd, async=False):
         pid_path = tempfile.mktemp()
@@ -40,6 +47,17 @@ class Executor(object):
         self._exec(task)
         return dst
 
+    def xvfb(self, width=800, height=600, depth=24, options=None):
+        task = {
+            'xvfb': {
+                'width': width,
+                'height': height,
+                'depth': depth,
+                'options': options
+            }
+        }
+        return self._exec(task)
+
     def kill(self, pid):
         return self._exec({'shell': 'kill -9 ' + pid})
 
@@ -50,7 +68,7 @@ class Executor(object):
 
         self.options = Options()
         self.options.connection = 'ssh'
-        self.options.remote_user = 'ubuntu'
+        self.options.remote_user = 'vagrant'
 
         loader = DataLoader()
         variable_manager = VariableManager()
