@@ -1,4 +1,3 @@
-import os
 import tempfile
 import signal
 
@@ -9,34 +8,31 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import play
 from ansible.executor import task_queue_manager
 
+from dilium_client import config, utils
+
 from .callback import Callback
 from .options import Options
 
-MODULES_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), 'modules'))
-
-module_loader.add_directory(MODULES_PATH)
-
-SSH_OPTS = '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+module_loader.add_directory(config.ANSIBLE_MODULES_PATH)
 
 
 class Executor(object):
 
-    def __init__(self, *hosts):
+    def __init__(self, *hosts, **options):
         self._hosts = list(hosts)
 
+        self.options = Options()
+        self.options.connection = options.get('conn_type',
+                                              config.CONN_TYPE)
+        self.options.remote_user = options.get('remote_user',
+                                               config.REMOTE_USER)
+        self.options.ssh_common_args = config.SSH_OPTS
+
     def __call__(self, cmd, async=False):
-        pid_path = tempfile.mktemp()
-
         if async:
-            cmd += ' & echo $! > ' + pid_path
+            cmd = utils.wrap_async(cmd)
 
-        result = self._exec({'shell': cmd})
-
-        if async:
-            result = self._exec({'shell': 'cat ' + pid_path})
-
-        return result
+        return self._exec({'shell': cmd})
 
     def download(self, src, dst=None, flat=True):
         dst = dst or tempfile.mkstemp()
@@ -77,18 +73,24 @@ class Executor(object):
         }
         return self._exec(task)
 
-    def kill(self, pid, sig=signal.SIGKILL):
+    def webdriver(self, command, env=None, log_path='/dev/null'):
+        task = {
+            'webdriver': {
+                'command': command,
+                'log_file': log_path,
+                'env': env
+            }
+        }
+        return self._exec(task)
+
+    def kill(self, pid, sig=signal.SIGINT):
         return self._exec({'shell': 'kill -{} {}'.format(sig, pid)})
 
     def _exec(self, task):
+        """Execute ansible task."""
         play_source = {'hosts': self._hosts,
                        'tasks': [task],
                        'gather_facts': 'no'}
-
-        self.options = Options()
-        self.options.connection = 'ssh'
-        self.options.remote_user = 'vagrant'
-        self.options.ssh_common_args = SSH_OPTS
 
         loader = DataLoader()
         variable_manager = VariableManager()

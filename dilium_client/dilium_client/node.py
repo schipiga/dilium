@@ -5,18 +5,18 @@ import tempfile
 
 from pylru import lrudecorator
 
-from dilium._ansible import Executor
-from dilium._selenium import Chrome
+from dilium_client import config
+from dilium_client._ansible import Executor
+from dilium_client._selenium import Chrome
 
 
 class Node(object):
     """
     """
-    MAX_DISPLAY = 2147483647
 
     def __init__(self, client):
         self._client = client
-        self._display = random.randint(1, self.MAX_DISPLAY)
+        self._display = random.randint(1, config.MAX_DISPLAY)
         self._video_path = None
 
     def get_browser(self):
@@ -77,7 +77,7 @@ class Node(object):
     def start_webdriver(self):
         """
         """
-        self._driver_pid = self.remote_exec('chromedriver', async=True)
+        self._driver_pid = self.remote_exec.webdriver('chromedriver')
 
     def stop_webdriver(self):
         """

@@ -1,3 +1,3 @@
-class DileniumError(Exception):
+class DiliumError(Exception):
     """
     """

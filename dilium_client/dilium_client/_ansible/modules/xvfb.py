@@ -12,9 +12,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from ansible.module_utils.basic import *
+
 import tempfile
 
-from ansible.module_utils.basic import *  # noqa
+
+def wrap_async(cmd):
+    pid_path = tempfile.mktemp()
+    cmd = 'nohup ' + cmd
+    cmd += ' & echo $! > ' + pid_path + ' && cat ' + pid_path
+    return 'bash -c "{}"'.format(cmd)
 
 
 def main():
@@ -34,16 +41,16 @@ def main():
     height = module.params['height']
     depth = module.params['depth']
     options = module.params['options']
-    pid_path = tempfile.mktemp()
 
-    cmd = 'Xvfb :{} -screen 0 {}x{}x{}'.format(display, width, height, depth)
+    cmd = 'Xvfb :{} -screen 0 {}x{}x{} >/dev/null 2>&1'.format(
+        display, width, height, depth)
+
     if options:
         cmd += ' ' + ' '.join(options)
-    cmd += ' & echo $! > ' + pid_path
-    cmd = 'bash -c "{}"'.format(cmd)
+
+    cmd = wrap_async(cmd)
 
     rc, stdout, stderr = module.run_command(cmd, check_rc=True)
-    rc, stdout, stderr = module.run_command('cat ' + pid_path, check_rc=True)
     module.exit_json(cmd=cmd, rc=rc, stderr=stderr, stdout=stdout)
 
 

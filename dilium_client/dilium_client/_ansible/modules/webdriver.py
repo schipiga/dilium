@@ -1,4 +1,4 @@
-#!/usr/bin/python
+ #!/usr/bin/python
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -17,9 +17,12 @@ from ansible.module_utils.basic import *
 import tempfile
 
 
-def wrap_async(cmd):
+def wrap_async(cmd, env=None):
     pid_path = tempfile.mktemp()
     cmd = 'nohup ' + cmd
+    if env:
+        envs = ' '.join("{0}='{1}'".format(*item) for item in env.items())
+        cmd = envs + ' ' + cmd
     cmd += ' & echo $! > ' + pid_path + ' && cat ' + pid_path
     return 'bash -c "{}"'.format(cmd)
 
@@ -29,31 +32,19 @@ def main():
     """
     module = AnsibleModule(
         argument_spec={
-            'rate': {'required': True, 'type': 'int'},
-            'width': {'required': True, 'type': 'int'},
-            'height': {'required': True, 'type': 'int'},
-            'display': {'required': True, 'type': 'int'},
-            'codec': {'required': True, 'type': 'str'},
-            'options': {'required': False, 'type': 'list'},
-            'file': {'required': True, 'type': 'str'},
+            'command': {'required': True, 'type': 'str'},
+            'log_file': {'required': False,
+                         'type': 'str',
+                         'default': '/dev/null'},
+            'env': {'required': False, 'type': 'dict'}
         })
 
-    rate = module.params['rate']
-    width = module.params['width']
-    height = module.params['height']
-    display = module.params['display']
-    codec = module.params['codec']
-    options = module.params['options']
-    file = module.params['file']
+    command = module.params['command']
+    log_file = module.params['log_file']
+    env = module.params['env']
 
-    cmd = 'avconv -f x11grab -r {} -s {}x{} -i :{} -codec {}'.format(
-        rate, width, height, display, codec)
-
-    if options:
-        cmd += ' ' + ' '.join(options)
-
-    cmd += ' ' + file + ' >/dev/null 2>&1'
-    cmd = utils.wrap_async(cmd)
+    cmd = '{} >{} 2>&1'.format(command, log_file)
+    cmd = wrap_async(cmd, env)
 
     rc, stdout, stderr = module.run_command(cmd, check_rc=True)
     module.exit_json(cmd=cmd, rc=rc, stderr=stderr, stdout=stdout)
