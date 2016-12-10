@@ -1,54 +1,34 @@
 import json
+import threading
 import time
+
 from tornado import web
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, create_engine, Text, UniqueConstraint
-from sqlalchemy.orm import sessionmaker
-from threading import RLock
-from collections import namedtuple
 
-request_lock = RLock()
+from . import config, database
 
-Base = declarative_base()
-
-DEFAULT = object()
-
-
-class Node(Base):
-
-    __tablename__ = 'nodes'
-
-    id = Column(Integer, primary_key=True)
-    host_name = Column(String(64), unique=True, nullable=False)
-    browsers_config = Column(Text, nullable=False)
-
-
-class Blocker(Base):
-
-    __tablename__ = 'blockers'
-
-    id = Column(Integer, primary_key=True)
-    host_name = Column(String(64), nullable=False)
-    browser_name = Column(String(64), nullable=False)
-    client_uuid = Column(String(64), nullable=False)
-    time_limit = Column(Integer, default=0)
-
-    __table_args__ = (UniqueConstraint('host_name', 'client_uuid'),)
-
-engine = create_engine('sqlite:///:memory:', echo=True)
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-
-
-tmp_blockers = {}
-TmpBlocker = namedtuple(
-    'TmpBlocker', ('host_name', 'browser_name', 'client_uuid', 'time_limit'))
+REQUEST_LOCK = threading.RLock()
 
 
 def get_client_uuid(headers):
+    """Get client UUID from request headers."""
     for key, value in headers.items():
-        if key.lower() == 'client-uuid':
+        if key.lower() == config.CLIENT_UUID:
             return value
+
+
+def cleanup_blockers():
+    """Cleanup records about blocked hosts, if their time is expired."""
+    for key, blocker in database.TMP_BLOCKERS.items():
+        if blocker.time_limit < time.time():
+            del database.TMP_BLOCKERS[key]
+
+    session = database.Session()
+
+    for blocker in session.query(database.Blocker).all():
+        if blocker.time_limit < time.time():
+            session.query(database.Blocker).filter_by(id=blocker.id).delete()
+
+    session.commit()
 
 
 class Main(web.RequestHandler):
@@ -61,60 +41,59 @@ class UploadConfig(web.RequestHandler):
 
     def post(self):
         """Upload config with info about hosts and browser capabilitites to db.
-
-        Args:
-            - config: json
         """
-        config = json.loads(self.request.body)
-        session = Session()
-        for host, config in config.items():
-            for capability in config['capabilities']:
-                capability['maxInstances'] = 1
-            node = Node(host_name=host, browsers_config=json.dumps(config))
+        hosts_config = json.loads(self.request.body)
+        session = database.Session()
+
+        for host, browsers_config in hosts_config.items():
+
+            for capability in browsers_config[config.CAPABILITIES]:
+                capability[config.MAX_INSTANCES] = 1
+
+            node = database.Node(host_name=host,
+                                 browsers_config=json.dumps(browsers_config))
             session.add(node)
+
         session.commit()
 
 
 class RequestHost(web.RequestHandler):
 
     def get(self):
+        """POST-request to request available host."""
         desired_capabilities = json.loads(self.request.body)
         client_uuid = get_client_uuid(self.request.headers)
-        session = Session()
 
-        with request_lock:
+        with REQUEST_LOCK:
+            cleanup_blockers()
 
-            for key, blocker in tmp_blockers.items():
-                if blocker.time_limit < time.time():
-                    del tmp_blockers[key]
-
-            for blocker in session.query(Blocker).all():
-                if blocker.time_limit < time.time():
-                    session.query(Blocker).filter_by(id=blocker.id).delete()
-            session.commit()
-
+            session = database.Session()
             available_nodes = []
-            for node in session.query(Node).all():
-                capabilities = json.loads(node.browsers_config)['capabilities']
+
+            for node in session.query(database.Node).all():
+                capabilities = json.loads(
+                    node.browsers_config)[config.CAPABILITIES]
 
                 for capability in capabilities:
                     for key, value in desired_capabilities.items():
 
-                        if capability.get(key, DEFAULT) != value:
+                        if capability.get(key, config.DEFAULT) != value:
                             break
                     else:
-                        browser_name = capability['browserName']
+                        browser_name = capability[config.BROWSER_NAME]
 
-                        blockers_count = session.query(Blocker).filter_by(
+                        blockers_count = session.query(
+                            database.Blocker).filter_by(
                             host_name=node.host_name,
                             browser_name=browser_name).count()
 
                         blockers_count += len(
-                            [blocker for blocker in tmp_blockers.values()
+                            [blocker for blocker
+                             in database.TMP_BLOCKERS.values()
                              if blocker.host_name == node.host_name
                              and blocker.browser_name == browser_name])
 
-                        max_count = capability['maxInstances']
+                        max_count = capability[config.MAX_INSTANCES]
 
                         if blockers_count < max_count:
                             available_nodes.append(
@@ -124,17 +103,20 @@ class RequestHost(web.RequestHandler):
 
             if not available_nodes:
                 self.write_error(500, exc_info='All browsers are busy')
+
             else:
                 available_nodes.sort(
                     key=lambda item: item['free_count'])
+
                 node = available_nodes[0]['node']
                 browser_name = available_nodes[0]['browser_name']
 
-                tmp_blockers[node.host_name + client_uuid] = TmpBlocker(
-                    host_name=node.host_name,
-                    client_uuid=client_uuid,
-                    browser_name=browser_name,
-                    time_limit=time.time() + 10)
+                database.TMP_BLOCKERS[node.host_name + client_uuid] = \
+                    database.TmpBlocker(
+                        host_name=node.host_name,
+                        client_uuid=client_uuid,
+                        browser_name=browser_name,
+                        time_limit=time.time() + 10)
 
                 self.write(node.host_name)
 
@@ -142,43 +124,53 @@ class RequestHost(web.RequestHandler):
 class AcquireHost(web.RequestHandler):
 
     def post(self):
+        """POST-request to acquire requested host."""
         client_uuid = get_client_uuid(self.request.headers)
-        data = json.loads(self.request.body)
-        host_name = data['host']
-        duration = int(data['duration'])
-        tmp_blocker = tmp_blockers[host_name + client_uuid]
+        host_data = json.loads(self.request.body)
 
+        host_name = host_data['host']
+        block_duration = int(host_data['duration'])
+
+        tmp_blocker = database.TMP_BLOCKERS[host_name + client_uuid]
         if tmp_blocker.time_limit < time.time():
             self.write_error(
                 500, exc_info="Time to acquire request host is outdated!")
+
         else:
-            session = Session()
-            blocker = Blocker(host_name=host_name,
-                              client_uuid=client_uuid,
-                              browser_name=tmp_blocker.browser_name,
-                              time_limit=time.time() + duration)
+            session = database.Session()
+            blocker = database.Blocker(host_name=host_name,
+                                       client_uuid=client_uuid,
+                                       browser_name=tmp_blocker.browser_name,
+                                       time_limit=time.time() + block_duration)
             session.add(blocker)
             session.commit()
-            del tmp_blockers[host_name + client_uuid]
+            del database.TMP_BLOCKERS[host_name + client_uuid]
 
 
 class ReleaseHost(web.RequestHandler):
 
     def post(self):
+        """POST-request to release acquired host."""
         client_uuid = get_client_uuid(self.request.headers)
         data = json.loads(self.request.body)
         host_name = data['host']
-        session = Session()
-        blocker = session.query(Blocker).filter_by(
+
+        session = database.Session()
+
+        blocker = session.query(database.Blocker).filter_by(
             host_name=host_name, client_uuid=client_uuid)
+
         if blocker.count():
             blocker.delete()
         else:
             self.write_error(500, exc_info='No hosts to release')
+
         session.commit()
 
 
 def server():
+    """Create tornado web application.
+    """
     return web.Application([
         (r"/", Main),
         (r"/upload-config/", UploadConfig),
