@@ -1,4 +1,3 @@
-import tempfile
 import signal
 
 from ansible.plugins import module_loader
@@ -34,8 +33,7 @@ class Executor(object):
 
         return self._exec({'shell': cmd})
 
-    def download(self, src, dst=None, flat=True):
-        dst = dst or tempfile.mkstemp()
+    def download(self, src, dst, flat=True):
         task = {
             'fetch': {
                 'src': src,
@@ -43,8 +41,7 @@ class Executor(object):
                 'flat': flat,
             }
         }
-        self._exec(task)
-        return dst
+        return self._exec(task)
 
     def xvfb(self, display, width=800, height=600, depth=24, options=None):
         task = {
@@ -58,8 +55,8 @@ class Executor(object):
         }
         return self._exec(task)
 
-    def avconv(self, file_path, display, frame_rate=30,
-               width=800, height=600, codec='libx264', options=None):
+    def avconv(self, file_path, display, width=800, height=600,
+               frame_rate=30, codec='libx264', options=None):
         task = {
             'avconv': {
                 'rate': frame_rate,

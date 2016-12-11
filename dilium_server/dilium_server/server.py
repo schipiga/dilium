@@ -118,7 +118,7 @@ class RequestHost(web.RequestHandler):
                         browser_name=browser_name,
                         time_limit=time.time() + 10)
 
-                self.write(node.host_name)
+                self.write(json.dumps({'host': node.host_name}))
 
 
 class AcquireHost(web.RequestHandler):
@@ -145,6 +145,7 @@ class AcquireHost(web.RequestHandler):
             session.add(blocker)
             session.commit()
             del database.TMP_BLOCKERS[host_name + client_uuid]
+            self.write(json.dumps({'browser': tmp_blocker.browser_name}))
 
 
 class ReleaseHost(web.RequestHandler):

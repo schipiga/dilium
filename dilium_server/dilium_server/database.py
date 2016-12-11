@@ -36,7 +36,8 @@ class Blocker(Base):
     __table_args__ = (UniqueConstraint('host_name', 'client_uuid'),)
 
 
-ENGINE = create_engine('sqlite:///' + config.DATABASE)
+ENGINE = create_engine('sqlite:///' + config.DATABASE,
+                       echo=True if config.DEBUG else False)
 Base.metadata.create_all(ENGINE)
 Session = sessionmaker(bind=ENGINE)
 

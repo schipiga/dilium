@@ -53,7 +53,7 @@ def main():
         cmd += ' ' + ' '.join(options)
 
     cmd += ' ' + file + ' >/dev/null 2>&1'
-    cmd = utils.wrap_async(cmd)
+    cmd = wrap_async(cmd)
 
     rc, stdout, stderr = module.run_command(cmd, check_rc=True)
     module.exit_json(cmd=cmd, rc=rc, stderr=stderr, stdout=stdout)

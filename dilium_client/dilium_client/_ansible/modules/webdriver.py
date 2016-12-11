@@ -19,10 +19,11 @@ import tempfile
 
 def wrap_async(cmd, env=None):
     pid_path = tempfile.mktemp()
-    cmd = 'nohup ' + cmd
     if env:
         envs = ' '.join("{0}='{1}'".format(*item) for item in env.items())
-        cmd = 'env ' + envs + ' ' + cmd
+        cmd = 'nohup env ' + envs + ' ' + cmd
+    else:
+        cmd = 'nohup ' + cmd
     cmd += ' & echo $! > ' + pid_path + ' && cat ' + pid_path
     return 'bash -c "{}"'.format(cmd)
 
