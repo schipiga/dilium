@@ -17,4 +17,3 @@ with node.inside_xvfb(*screen_size):
         browser.quit()
 node.download_video('/home/user/dilium.mp4')
 client.release_host()
-

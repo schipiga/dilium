@@ -11,8 +11,8 @@ Welcome to Dilium - Distributed Selenium project!
 What is it
 ----------
 
-It is alternate of selenium grid. But it's fully *python* project, which
-uses selenium and ansible under hood.
+It is **python** alternative of selenium grid, which uses selenium and ansible
+under hood.
 
 ---------
 Why is it
@@ -29,9 +29,10 @@ Selenium grid has some disadvantages:
   other language.
 
 Gridless advantages:
-- Ansible provides flexible and extensible way to manipulate with node.
+
+- Ansible provides flexible and extensible way to manipulate with nodes.
 - Ansible doesn't require client-side software, just ssh-access.
-- Webdriver can be launched directly on node and listen remote connections as
+- Webdriver can be launched directly on node and listens remote connections as
   it happens in localhost.
 
 -------------
