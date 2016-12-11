@@ -2,6 +2,8 @@
 Dilium client
 =============
 
+Client to request node and launch browser.
+
 .. automodule:: dilium_client.client
    :members:
 
