@@ -21,6 +21,7 @@ from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
 
 
 class Chrome(webdriver.Chrome):
+    """Chrome wrapper for remote launching."""
 
     def __init__(self,
                  node,

@@ -16,10 +16,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
-
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../dilium_client'))
+sys.path.insert(0, os.path.abspath('../../dilium_server'))
 
 # -- General configuration ------------------------------------------------
 
@@ -30,8 +30,11 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.viewcode']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.viewcode'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -154,4 +157,43 @@ texinfo_documents = [
 ]
 
 
+import inspect
 
+
+def _get_unwrapped_func(func):
+    """Get original function under decorator.
+    Decorator hides original function inside itself. But in some cases it's
+    important to get access to original function, for ex: for documentation.
+    Args:
+        func (function): function that can be potentially a decorator which
+            hides original function
+    Returns:
+        function: unwrapped function or the same function
+    """
+    if not inspect.isfunction(func) and not inspect.ismethod(func):
+        return func
+
+    if func.__name__ != func.func_code.co_name:
+        for cell in func.func_closure:
+            obj = cell.cell_contents
+            if inspect.isfunction(obj):
+                if func.__name__ == obj.func_code.co_name:
+                    return obj
+                else:
+                    return _get_unwrapped_func(obj)
+    return func
+
+
+def setup(app):
+    """Customize function args retrieving to get args under decorator."""
+    from functools import partial
+    from sphinx.ext import autodoc
+
+    orig_getargspec = autodoc.getargspec
+
+    def patched_getargspec(func):
+        if type(func) is not partial:
+            func = _get_unwrapped_func(func)
+        return orig_getargspec(func)
+
+    autodoc.getargspec = patched_getargspec

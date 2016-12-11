@@ -1,6 +1,6 @@
 """
 -------------
-Dilium Errors
+Dilium errors
 -------------
 """
 

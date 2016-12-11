@@ -10,6 +10,7 @@ with node.inside_xvfb(*screen_size):
     with node.capture_video(*screen_size):
         browser = node.get_browser()
         browser.launch()
+        # in xvfb direct ``maximize_window``-call doesn't work properly :(
         browser.set_window_size(*screen_size)
         browser.maximize_window()
         browser.get('http://yandex.ru')

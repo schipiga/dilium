@@ -1,6 +1,6 @@
 """
 -----------
-Remote node
+Dilium node
 -----------
 """
 
@@ -54,7 +54,7 @@ class Node(object):
 
         Args:
             *args (optional): ``*args`` of browser instantiation.
-            **kwgs (optional): ``**kwgs** of browser instantiation.
+            **kwgs (optional): ``**kwgs`` of browser instantiation.
         """
         browser = {
             config.CHROME: Chrome,
