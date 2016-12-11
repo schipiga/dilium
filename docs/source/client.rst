@@ -14,6 +14,9 @@ Dilium client
 .. automodule:: dilium_client.utils
    :members:
 
+.. automodule:: dilium_client._selenium.chrome
+   :members:
+
 .. automodule:: dilium_client._ansible.executor
    :members:
 
@@ -23,5 +26,11 @@ Dilium client
 .. automodule:: dilium_client._ansible.callback
    :members:
 
-.. automodule:: dilium_client._selenium.chrome
+.. automodule:: dilium_client._ansible.modules.avconv
+   :members:
+
+.. automodule:: dilium_client._ansible.modules.webdriver
+   :members:
+
+.. automodule:: dilium_client._ansible.modules.xvfb
    :members:

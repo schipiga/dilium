@@ -1,11 +1,29 @@
+"""
+-----------------------
+Dilium ansible executor
+-----------------------
+"""
+
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 import signal
 
-from ansible.plugins import module_loader
+from ansible.executor import task_queue_manager
 from ansible.inventory import Inventory
-from ansible.vars import VariableManager
 from ansible.parsing.dataloader import DataLoader
 from ansible.playbook import play
-from ansible.executor import task_queue_manager
+from ansible.plugins import module_loader
+from ansible.vars import VariableManager
 
 from dilium_client import config, utils
 
@@ -16,6 +34,7 @@ module_loader.add_directory(config.ANSIBLE_MODULES_PATH)
 
 
 class Executor(object):
+    """Remote commands executor via ansible."""
 
     def __init__(self, *hosts, **options):
         self._hosts = list(hosts)
@@ -100,8 +119,8 @@ class Executor(object):
                                      variable_manager=variable_manager,
                                      loader=loader)
 
-        storage = []
-        callback = Callback(storage)
+        bucket = []
+        callback = Callback(bucket)
 
         tqm = task_queue_manager.TaskQueueManager(
             inventory=inventory_inst,
@@ -114,7 +133,6 @@ class Executor(object):
         try:
             tqm.run(play_inst)
         finally:
-            if tqm is not None:
-                tqm.cleanup()
+            tqm.cleanup()
 
-        return storage
+        return bucket

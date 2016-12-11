@@ -53,11 +53,11 @@ class Chrome(webdriver.Chrome):
                 command_executor=executor,
                 desired_capabilities=self._desired_capabilities)
         except:
-            self.quit()
+            self._node.stop_webdriver()
             raise
 
     def quit(self):
-        """Quit from browser."""
+        """Quit chrome browser."""
         try:
             super(webdriver.Chrome, self).quit()
         finally:

@@ -1,5 +1,11 @@
 #!/usr/bin/python
 
+"""
+-----------------------
+Ansible module for xvfb
+-----------------------
+"""
+
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -25,8 +31,6 @@ def wrap_async(cmd):
 
 
 def main():
-    """
-    """
     module = AnsibleModule(
         argument_spec={
             'display': {'required': True, 'type': 'int'},
