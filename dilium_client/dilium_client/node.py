@@ -77,7 +77,17 @@ class Node(object):
     def start_webdriver(self):
         """
         """
-        self._driver_pid = self.remote_exec.webdriver('chromedriver')
+        env = {'DISPLAY': ':{}'.format(self._display)}
+        port = random.randint(10000, 60000)
+        command = {
+            'Chrome': 'chromedriver --port={} --whitelisted-ips=""'.format(port)
+        }[self._client.browser]
+        self._driver_pid = self.remote_exec.webdriver(command, env=env)
+        self._webdriver_url = 'http://{}:{}'.format(self._client._host, port)
+
+    @property
+    def webdriver_url(self):
+        return self._webdriver_url
 
     def stop_webdriver(self):
         """

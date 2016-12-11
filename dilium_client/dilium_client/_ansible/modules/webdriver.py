@@ -22,7 +22,7 @@ def wrap_async(cmd, env=None):
     cmd = 'nohup ' + cmd
     if env:
         envs = ' '.join("{0}='{1}'".format(*item) for item in env.items())
-        cmd = envs + ' ' + cmd
+        cmd = 'env ' + envs + ' ' + cmd
     cmd += ' & echo $! > ' + pid_path + ' && cat ' + pid_path
     return 'bash -c "{}"'.format(cmd)
 

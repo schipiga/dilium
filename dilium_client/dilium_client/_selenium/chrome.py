@@ -20,13 +20,16 @@ class Chrome(webdriver.Chrome):
             else:
                 desired_capabilities.update(chrome_options.to_capabilities())
 
+        self._desired_capabilities = desired_capabilities
+
+    def launch(self):
         self._node.start_webdriver()
 
         try:
             super(webdriver.Chrome, self).__init__(
                 command_executor=ChromeRemoteConnection(
                     remote_server_addr=self._node.webdriver_url),
-                desired_capabilities=desired_capabilities)
+                desired_capabilities=self._desired_capabilities)
         except Exception:
             self.quit()
             raise
