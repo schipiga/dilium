@@ -4,6 +4,16 @@
 ----------------------------
 Ansible module for webdriver
 ----------------------------
+
+Usage example::
+
+    task = {
+        'webdriver': {
+            'command': command,
+            'log_file': log_path,
+            'env': env
+        }
+    }
 """
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may

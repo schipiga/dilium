@@ -24,14 +24,13 @@ from . import config, node
 
 
 class Client(object):
-    """Client for Dilium server to get node."""
+    """Client for Dilium server to get node.
+
+    Args:
+        dilium_url (str): URL to dilium server.
+    """
 
     def __init__(self, dilium_url):
-        """Constructor.
-
-        Args:
-            dilium_url (str): URL to dilium server.
-        """
         self._dilium_url = dilium_url.strip('/')
         self._uuid = str(uuid.uuid4())
         self._host = None
@@ -41,7 +40,7 @@ class Client(object):
     def get_node(self, capabilities, duration=config.ACQUIRE_DURATION):
         """Get node with browser according to requested capabilities.
 
-        Arguments:
+        Args:
             capabilities (dict): Requested browser|node capabilities
             duration (int, optional): Duration of acquisition in seconds.
 
@@ -108,6 +107,6 @@ class Client(object):
 
     @property
     def browser_name(self):
-        """Browser name in acquired host."""
+        """Name of browser on acquired host."""
         assert self._browser_name, 'Undefined browser because no acquired host'
         return self._browser_name

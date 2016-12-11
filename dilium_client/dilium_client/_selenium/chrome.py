@@ -21,19 +21,18 @@ from selenium.webdriver.chrome.remote_connection import ChromeRemoteConnection
 
 
 class Chrome(webdriver.Chrome):
-    """Chrome wrapper for remote launching."""
+    """Chrome wrapper for remote launching.
+
+    Args:
+        node (Node): Remote node with chrome browser.
+        chrome_options (object, optional): Chrome options.
+        desired_capabilities (dict, optional): Desired chrome capabilities.
+    """
 
     def __init__(self,
                  node,
                  chrome_options=None,
                  desired_capabilities=None):
-        """Constructor.
-
-        Args:
-            node (Node): Remote node with chrome browser.
-            chrome_options (object, optional): Chrome options.
-            desired_capabilities (dict, optional): Desired chrome capabilities.
-        """
         chrome_options = chrome_options or self.create_options()
         desired_capabilities = desired_capabilities or {}
         desired_capabilities.update(chrome_options.to_capabilities())

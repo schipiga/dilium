@@ -15,7 +15,7 @@ Why is it
 
 Selenium grid has some disadvantages:
 
-- Selenium grid doesn't manage node. It just provide webdriver API. Some
+- Selenium grid doesn't manage node. It just provides webdriver API. Some
   additional functionalities, like video capture and xvfb mode, are implemented
   via hacks on client side (proxies, servlets, etc).
 - Selenium grid requires additional client (minion) on node.

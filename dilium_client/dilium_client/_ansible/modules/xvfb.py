@@ -4,6 +4,18 @@
 -----------------------
 Ansible module for xvfb
 -----------------------
+
+Usage example::
+
+    task = {
+        'xvfb': {
+            'display': display,
+            'width': width,
+            'height': height,
+            'depth': depth,
+            'options': options
+        }
+    }
 """
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may

@@ -4,6 +4,20 @@
 -------------------------
 Ansible module for avconv
 -------------------------
+
+Usage example::
+
+    task = {
+        'avconv': {
+            'rate': frame_rate,
+            'width': width,
+            'height': height,
+            'display': display,
+            'codec': codec,
+            'options': options,
+            'file': file_path
+        }
+    }
 """
 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may

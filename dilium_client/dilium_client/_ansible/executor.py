@@ -34,9 +34,17 @@ module_loader.add_directory(config.ANSIBLE_MODULES_PATH)
 
 
 class Executor(object):
-    """Remote commands executor via ansible."""
+    """Remote commands executor via ansible.
+
+    Args:
+        *hosts (optional): Sequence of hosts where commands will be executed.
+            As minimum one host should be passed
+        **options (optional): Options for ansible. Full sequence is described
+            in ``Options`` section.
+    """
 
     def __init__(self, *hosts, **options):
+        assert hosts
         self._hosts = list(hosts)
 
         self.options = Options()
@@ -47,12 +55,14 @@ class Executor(object):
         self.options.ssh_common_args = config.SSH_OPTS
 
     def __call__(self, cmd, async=False):
+        """Execute shell command."""
         if async:
             cmd = utils.wrap_async(cmd)
 
         return self._exec({'shell': cmd})
 
     def download(self, src, dst, flat=True):
+        """Download file from remote to local host."""
         task = {
             'fetch': {
                 'src': src,
@@ -63,6 +73,7 @@ class Executor(object):
         return self._exec(task)
 
     def xvfb(self, display, width=800, height=600, depth=24, options=None):
+        """Launch xvfb on remote host."""
         task = {
             'xvfb': {
                 'display': display,
@@ -76,6 +87,7 @@ class Executor(object):
 
     def avconv(self, file_path, display, width=800, height=600,
                frame_rate=30, codec='libx264', options=None):
+        """Launch avconv on remote host."""
         task = {
             'avconv': {
                 'rate': frame_rate,
@@ -90,6 +102,7 @@ class Executor(object):
         return self._exec(task)
 
     def webdriver(self, command, env=None, log_path='/dev/null'):
+        """Launch webdriver on remote host."""
         task = {
             'webdriver': {
                 'command': command,
@@ -100,6 +113,7 @@ class Executor(object):
         return self._exec(task)
 
     def kill(self, pid, sig=signal.SIGINT):
+        """Send signal to process on remote host."""
         return self._exec({'shell': 'kill -{} {}'.format(sig, pid)})
 
     def _exec(self, task):

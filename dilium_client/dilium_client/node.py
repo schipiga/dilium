@@ -34,14 +34,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Node(object):
-    """Remote node with requested browser."""
+    """Remote node with requested browser.
+
+    Args:
+        client (Client): Dilium client.
+    """
 
     def __init__(self, client):
-        """Constructor.
-
-        Args:
-            client (Client): Dilium client.
-        """
         self._client = client
         self._display = random.randint(1, config.MAX_DISPLAY)
         self._video_path = None
